@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ':*)",
+      "Bash(python3 app.py)",
+      "Bash(jobs)",
+      "Bash(kill %2)",
+      "WebSearch"
+    ]
+  }
+}

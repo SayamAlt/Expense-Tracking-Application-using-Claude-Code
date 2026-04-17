@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from database.db import get_db, init_db, seed_db
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
+app.secret_key = 'dev-secret-key-change-in-production'
 
 with app.app_context():
     init_db()
@@ -20,6 +21,11 @@ def landing():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    # Prevent logged-in users from accessing register page
+    if "user_id" in session:
+        flash("You are already logged in", "info")
+        return redirect(url_for("landing"))
+
     if request.method == "POST":
         # Get form data
         name = request.form.get("name", "").strip()
@@ -83,11 +89,6 @@ def register():
     return render_template("register.html")
 
 
-@app.route("/login")
-def login():
-    return render_template("login.html")
-
-
 @app.route("/terms")
 def terms():
     return render_template("terms.html")
@@ -102,28 +103,94 @@ def privacy():
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    # Prevent logged-in users from accessing login page
+    if "user_id" in session:
+        flash("You are already logged in", "info")
+        return redirect(url_for("landing"))
+
+    if request.method == "POST":
+        # Get form data
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+
+        # Validation
+        errors = []
+        if not email:
+            errors.append("Email is required")
+        if not password:
+            errors.append("Password is required")
+
+        if errors:
+            return render_template("login.html", error="; ".join(errors))
+
+        # Check user credentials
+        conn = get_db()
+        user = conn.execute(
+            "SELECT id, password_hash FROM users WHERE email = ?",
+            (email,)
+        ).fetchone()
+        conn.close()
+
+        if user and check_password_hash(user["password_hash"], password):
+            # Login successful - store user id in session
+            session["user_id"] = user["id"]
+            flash("Logged in successfully!", "success")
+            return redirect(url_for("landing"))
+        else:
+            # Invalid credentials
+            return render_template("login.html", error="Invalid email or password")
+
+    return render_template("login.html")
+
+
 @app.route("/logout")
 def logout():
-    return "Logout — coming in Step 3"
+    # Prevent logged-out users from accessing logout page
+    if "user_id" not in session:
+        flash("You are already logged out", "info")
+        return redirect(url_for("landing"))
+
+    # Clear session
+    session.clear()
+    flash("Logged out successfully!", "info")
+    return redirect(url_for("landing"))
 
 
 @app.route("/profile")
 def profile():
-    return "Profile page — coming in Step 4"
+    # Check if user is logged in
+    if "user_id" not in session:
+        flash("Please log in to access this page", "warning")
+        return redirect(url_for("login"))
+    return "Profile page — User ID: " + str(session["user_id"])
 
 
 @app.route("/expenses/add")
 def add_expense():
+    # Check if user is logged in
+    if "user_id" not in session:
+        flash("Please log in to access this page", "warning")
+        return redirect(url_for("login"))
     return "Add expense — coming in Step 7"
 
 
 @app.route("/expenses/<int:id>/edit")
 def edit_expense(id):
+    # Check if user is logged in
+    if "user_id" not in session:
+        flash("Please log in to access this page", "warning")
+        return redirect(url_for("login"))
     return "Edit expense — coming in Step 8"
 
 
 @app.route("/expenses/<int:id>/delete")
 def delete_expense(id):
+    # Check if user is logged in
+    if "user_id" not in session:
+        flash("Please log in to access this page", "warning")
+        return redirect(url_for("login"))
     return "Delete expense — coming in Step 9"
 
 
