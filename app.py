@@ -1,5 +1,6 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, redirect, url_for
 from database.db import get_db, init_db, seed_db
+from werkzeug.security import generate_password_hash
 
 app = Flask(__name__)
 
@@ -17,8 +18,68 @@ def landing():
     return render_template("landing.html")
 
 
-@app.route("/register")
+@app.route("/register", methods=["GET", "POST"])
 def register():
+    if request.method == "POST":
+        # Get form data
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+
+        # Validation
+        errors = []
+
+        if not name:
+            errors.append("Name is required")
+
+        if not email:
+            errors.append("Email is required")
+        elif "@" not in email or "." not in email.split("@")[1] if "@" in email else True:
+            errors.append("Invalid email format")
+
+        if not password:
+            errors.append("Password is required")
+        elif len(password) < 8:
+            errors.append("Password must be at least 8 characters")
+
+        confirm_password = request.form.get("confirm_password", "").strip()
+        if not confirm_password:
+            errors.append("Confirm password is required")
+        elif password != confirm_password:
+            errors.append("Passwords do not match")
+
+        if errors:
+            return render_template("register.html", error="; ".join(errors))
+
+        # Check if email already exists
+        conn = get_db()
+        existing_user = conn.execute(
+            "SELECT id FROM users WHERE email = ?",
+            (email,)
+        ).fetchone()
+
+        if existing_user:
+            conn.close()
+            return render_template("register.html", error="Email already registered")
+
+        # Hash password
+        password_hash = generate_password_hash(password, method="pbkdf2:sha256")
+
+        # Insert new user using parameterized query (no SQL injection)
+        try:
+            conn.execute(
+                "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
+                (name, email, password_hash)
+            )
+            conn.commit()
+            conn.close()
+
+            # Redirect to login after successful registration
+            return redirect(url_for("login"))
+        except Exception as e:
+            conn.close()
+            return render_template("register.html", error="Registration failed. Please try again.")
+
     return render_template("register.html")
 
 
