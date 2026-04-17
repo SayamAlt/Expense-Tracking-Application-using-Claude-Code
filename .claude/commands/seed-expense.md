@@ -24,7 +24,7 @@ Example: /seed-expenses 1 50 6"
 ## Step 2 — Verify user exists
 
 Before generating anything, confirm the user_id exists 
-in the users table. If not, stop and say:
+in the users table in spendly.db. If not, stop and say:
 "No user found with id <user_id>."
 
 ## Step 3 — Generate and insert expenses
