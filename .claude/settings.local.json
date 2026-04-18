@@ -5,7 +5,8 @@
       "Bash(python3 -c ':*)",
       "WebSearch",
       "Bash(python3:*)",
-      "Bash(python -c ':*)"
+      "Bash(python -c ':*)",
+      "Bash(sqlite3:*)"
     ]
   }
 }

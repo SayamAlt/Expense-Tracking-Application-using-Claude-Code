@@ -9,7 +9,7 @@
     </div>
     <h2 class="profile-name">{{ user.name }}</h2>
     <p class="profile-email">{{ user.email }}</p>
-    <p class="profile-member-since">Member since {{ user.member_since }}</p>
+    <p class="profile-member-since">Member since {{ user.created_at[:10] }}</p>
   </aside>
 
   <!-- Summary Stats Row (KPIs) -->

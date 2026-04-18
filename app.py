@@ -25,6 +25,8 @@ with app.app_context():
 
 @app.route("/")
 def landing():
+    if "user_id" in session:
+        return redirect(url_for("profile"))
     return render_template("landing.html")
 
 
@@ -201,12 +203,12 @@ def profile():
         flash("Please log in to access this page", "warning")
         return redirect(url_for("login"))
 
-    # Hardcoded user data for UI design
-    user = {
-        "name": "Alex Johnson",
-        "email": "alex.johnson@example.com",
-        "member_since": "Jan 2023"
-    }
+    conn = get_db()
+    user = conn.execute(
+        "SELECT name, email, created_at FROM users WHERE id = ?",
+        (session["user_id"],)
+    ).fetchone()
+    conn.close()
 
     # Hardcoded expense data for UI design
     expenses = [
