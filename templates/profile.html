@@ -2,83 +2,113 @@
 
 {% block content %}
 <div class="profile-container">
-  <div class="profile-content">
-    <!-- Profile Sidebar -->
-    <aside class="profile-sidebar">
-      <div class="profile-avatar"></div>
-      <h2 class="profile-name">{{ user.name }}</h2>
-      <p class="profile-email">{{ user.email }}</p>
+  <!-- Profile Sidebar -->
+  <aside class="profile-sidebar">
+    <div class="profile-avatar">
+      <i data-lucide="user"></i>
+    </div>
+    <h2 class="profile-name">{{ user.name }}</h2>
+    <p class="profile-email">{{ user.email }}</p>
+    <p class="profile-member-since">Member since {{ user.member_since }}</p>
+  </aside>
 
-      <div class="profile-stats">
-        <div class="stat-card">
-          <span class="stat-number">{{ expenses|length }}</span>
-          <span class="stat-label">Total Transactions</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-number">\${{ "%.2f"|format(total_spent) }}</span>
-          <span class="stat-label">Total Spent</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-number">\${{ "%.2f"|format(total_spent / expenses|length if expenses|length > 0 else 0) }}</span>
-          <span class="stat-label">Avg per Transaction</span>
-        </div>
+  <!-- Summary Stats Row (KPIs) -->
+  <div class="summary-stats">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i data-lucide="wallet"></i>
       </div>
-    </aside>
-
-    <!-- Main Profile Content -->
-    <main class="profile-main">
-      <!-- Action Buttons -->
-      <div class="profile-actions">
-        <a href="{{ url_for('add_expense') }}" class="btn btn-primary">+ Add Expense</a>
-        <a href="{{ url_for('export_expenses') }}" class="btn btn-outline">Export</a>
+      <div class="stat-content">
+        <div class="stat-label">Total Spent</div>
+        <div class="stat-value">${{ total_spent_formatted }}</div>
       </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i data-lucide="receipt"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Transactions</div>
+        <div class="stat-value">{{ expenses|length }}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i data-lucide="trending-up"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Top Category</div>
+        <div class="stat-value">{{ top_category_name }}</div>
+      </div>
+    </div>
+  </div>
 
-      <!-- Expense Section -->
-      <section class="expense-section">
-        <div class="section-header">
-          <div>
+  <!-- Main area: two-column layout -->
+  <main class="profile-main">
+    <div class="columns">
+      <!-- Recent Expenses (left) -->
+      <section class="column" id="recent-expenses">
+        <div class="card expense-section">
+          <div class="section-header">
             <h2 class="section-title">Recent Expenses</h2>
-            <p class="section-subtitle">View and manage your spending history</p>
+          </div>
+          <div class="table-container">
+            <table class="transaction-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for expense in recent_expenses %}
+                <tr>
+                  <td>{{ expense.date }}</td>
+                  <td>{{ expense.description }}</td>
+                  <td><span class="badge badge-category">{{ expense.category }}</span></td>
+                  <td class="amount-col">{{ expense.amount | currency }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
           </div>
         </div>
-
-        {% if expenses %}
-        <!-- Expense Table -->
-        <div class="expense-table-container">
-          <table class="expense-table">
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th>Amount</th>
-                <th>Date</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for expense in expenses|sort(attribute='date', reverse=true) %}
-              <tr>
-                <td class="category-{{ expense.category.lower() }}">{{ expense.category }}</td>
-                <td class="expense-amount {% if expense.amount > 0 %}income{% else %}expense{% endif %}">
-                  ${{ "%.2f"|format(expense.amount) }}
-                </td>
-                <td>{{ expense.date }}</td>
-                <td>{{ expense.description or "-" }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        {% else %}
-        <!-- Empty State -->
-        <div class="empty-state">
-          <div class="empty-state-icon">📋</div>
-          <h3>No expenses recorded yet</h3>
-          <p>Start tracking your spending by adding your first expense</p>
-          <a href="{{ url_for('add_expense') }}" class="btn btn-primary">Add Your First Expense</a>
-        </div>
-        {% endif %}
       </section>
-    </main>
-  </div>
+
+      <!-- By Category (right) -->
+      <section class="column" id="by-category">
+        <div class="card expense-section">
+          <div class="section-header">
+            <h2 class="section-title">By Category</h2>
+          </div>
+          <div class="category-breakdown">
+            {% for cat in category_breakdown %}
+            <div class="category-row">
+              <div class="category-info">
+                <span class="category-label">{{ cat.name }}</span>
+                <span class="category-amount">{{ cat.amount | currency }}</span>
+              </div>
+              <div class="progress-wrapper">
+                <div class="progress-bar" style="--progress: {{ cat.percentage }};">
+                  <span class="progress-fill"></span>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    lucide.createIcons();
+  });
+</script>
 {% endblock %}

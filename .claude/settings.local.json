@@ -3,7 +3,9 @@
     "allow": [
       "Bash(python3 -m pytest tests/ -v)",
       "Bash(python3 -c ':*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(python3:*)",
+      "Bash(python -c ':*)"
     ]
   }
 }

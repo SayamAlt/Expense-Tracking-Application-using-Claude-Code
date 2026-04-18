@@ -5,6 +5,15 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.secret_key = 'dev-secret-key-change-in-production'
 
+# Custom filter for currency formatting
+@app.template_filter('currency')
+def currency_filter(value):
+    try:
+        amount = float(value)
+        return f"{amount:,.2f}"
+    except (ValueError, TypeError):
+        return "0.00"
+
 with app.app_context():
     init_db()
     seed_db()
@@ -192,19 +201,70 @@ def profile():
         flash("Please log in to access this page", "warning")
         return redirect(url_for("login"))
 
-    conn = get_db()
-    user = conn.execute(
-        "SELECT name, email FROM users WHERE id = ?",
-        (session["user_id"],)
-    ).fetchone()
-    expenses = conn.execute(
-        "SELECT category, amount, date, description FROM expenses WHERE user_id = ? ORDER BY date DESC",
-        (session["user_id"],)
-    ).fetchall()
-    total_spent = sum(float(e["amount"]) for e in expenses)
-    conn.close()
+    # Hardcoded user data for UI design
+    user = {
+        "name": "Alex Johnson",
+        "email": "alex.johnson@example.com",
+        "member_since": "Jan 2023"
+    }
 
-    return render_template("profile.html", user=user, expenses=expenses, total_spent=total_spent)
+    # Hardcoded expense data for UI design
+    expenses = [
+        {"date": "2026-04-10", "description": "Grocery Store", "category": "Food", "amount": 45.30},
+        {"date": "2026-04-08", "description": "Uber Ride", "category": "Transport", "amount": 12.50},
+        {"date": "2026-04-05", "description": "Electricity Bill", "category": "Bills", "amount": 89.99},
+        {"date": "2026-04-03", "description": "Restaurant Dinner", "category": "Food", "amount": 67.00},
+        {"date": "2026-04-01", "description": "Monthly Gym", "category": "Health", "amount": 35.00},
+        {"date": "2026-03-28", "description": "Online Books", "category": "Shopping", "amount": 28.75},
+        {"date": "2026-03-25", "description": "Bus Pass", "category": "Transport", "amount": 65.00}
+    ]
+
+    total_spent = sum(float(e["amount"]) for e in expenses)
+    total_spent_formatted = f"{total_spent:.2f}"
+    average = total_spent / len(expenses) if expenses else 0
+    average_formatted = f"{average:.2f}"
+
+    # Calculate top category
+    from collections import Counter
+    category_totals = Counter()
+    for e in expenses:
+        category_totals[e["category"]] += float(e["amount"])
+
+    if category_totals:
+        top_category_entry = category_totals.most_common(1)[0]
+        top_category_name = top_category_entry[0]
+        top_category_amount = top_category_entry[1]
+    else:
+        top_category_name = "None"
+        top_category_amount = 0
+
+    top_category_formatted = f"{top_category_amount:.2f}"
+
+    # Recent expenses for the table
+    recent_expenses = expenses[:5]
+
+    # Category breakdown for progress bars
+    category_breakdown = []
+    total_for_percent = total_spent if total_spent > 0 else 1
+    for cat, amt in category_totals.most_common():
+        category_breakdown.append({
+            "name": cat,
+            "amount": amt,
+            "percentage": round((amt / total_for_percent) * 100, 1)
+        })
+
+    return render_template(
+        "profile.html",
+        user=user,
+        expenses=expenses,
+        recent_expenses=recent_expenses,
+        total_spent=total_spent,
+        total_spent_formatted=total_spent_formatted,
+        average=round(average, 2),
+        average_formatted=average_formatted,
+        top_category_name=top_category_name,
+        category_breakdown=category_breakdown
+    )
 @app.route("/profile/expenses")
 def profile_expenses():
     # Check if user is logged in
@@ -244,15 +304,6 @@ def export_expenses():
         "Content-Type": "text/csv",
         "Content-Disposition": "attachment; filename=expenses.csv"
     }
-
-    conn = get_db()
-    expenses = conn.execute(
-        "SELECT category, amount, date, description FROM expenses WHERE user_id = ? ORDER BY date DESC",
-        (session["user_id"],)
-    ).fetchall()
-    conn.close()
-
-    return render_template("profile.html", user={"name": "", "email": ""}, expenses=expenses)
 
 
 if __name__ == "__main__":
