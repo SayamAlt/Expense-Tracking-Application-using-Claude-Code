@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="profile-container">
+  <!-- Profile Sidebar -->
+  <aside class="profile-sidebar">
+    <div class="profile-avatar">
+      <i data-lucide="user"></i>
+    </div>
+    <h2 class="profile-name">{{ user.name }}</h2>
+    <p class="profile-email">{{ user.email }}</p>
+    <p class="profile-member-since">Member since {{ user.member_since }}</p>
+  </aside>
+
+  <!-- Summary Stats Row (KPIs) -->
+  <div class="summary-stats">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i data-lucide="wallet"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Total Spent</div>
+        <div class="stat-value">${{ total_spent_formatted }}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i data-lucide="receipt"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Transactions</div>
+        <div class="stat-value">{{ expenses|length }}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i data-lucide="trending-up"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Top Category</div>
+        <div class="stat-value">{{ top_category_name }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main area: two-column layout -->
+  <main class="profile-main">
+    <div class="columns">
+      <!-- Recent Expenses (left) -->
+      <section class="column" id="recent-expenses">
+        <div class="card expense-section">
+          <div class="section-header">
+            <h2 class="section-title">Recent Expenses</h2>
+          </div>
+          <div class="table-container">
+            <table class="transaction-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for expense in recent_expenses %}
+                <tr>
+                  <td>{{ expense.date }}</td>
+                  <td>{{ expense.description }}</td>
+                  <td><span class="badge badge-category">{{ expense.category }}</span></td>
+                  <td class="amount-col">{{ expense.amount | currency }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- By Category (right) -->
+      <section class="column" id="by-category">
+        <div class="card expense-section">
+          <div class="section-header">
+            <h2 class="section-title">By Category</h2>
+          </div>
+          <div class="category-breakdown">
+            {% for cat in category_breakdown %}
+            <div class="category-row">
+              <div class="category-info">
+                <span class="category-label">{{ cat.name }}</span>
+                <span class="category-amount">{{ cat.amount | currency }}</span>
+              </div>
+              <div class="progress-wrapper">
+                <div class="progress-bar" style="--progress: {{ cat.percentage }};">
+                  <span class="progress-fill"></span>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    lucide.createIcons();
+  });
+</script>
+{% endblock %}
