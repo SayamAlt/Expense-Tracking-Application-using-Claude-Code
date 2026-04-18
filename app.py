@@ -158,13 +158,6 @@ def logout():
     return redirect(url_for("landing"))
 
 
-@app.route("/profile")
-def profile():
-    # Check if user is logged in
-    if "user_id" not in session:
-        flash("Please log in to access this page", "warning")
-        return redirect(url_for("login"))
-    return "Profile page — User ID: " + str(session["user_id"])
 
 
 @app.route("/expenses/add")
@@ -192,6 +185,74 @@ def delete_expense(id):
         flash("Please log in to access this page", "warning")
         return redirect(url_for("login"))
     return "Delete expense — coming in Step 9"
+@app.route("/profile")
+def profile():
+    # Check if user is logged in
+    if "user_id" not in session:
+        flash("Please log in to access this page", "warning")
+        return redirect(url_for("login"))
+
+    conn = get_db()
+    user = conn.execute(
+        "SELECT name, email FROM users WHERE id = ?",
+        (session["user_id"],)
+    ).fetchone()
+    expenses = conn.execute(
+        "SELECT category, amount, date, description FROM expenses WHERE user_id = ? ORDER BY date DESC",
+        (session["user_id"],)
+    ).fetchall()
+    total_spent = sum(float(e["amount"]) for e in expenses)
+    conn.close()
+
+    return render_template("profile.html", user=user, expenses=expenses, total_spent=total_spent)
+@app.route("/profile/expenses")
+def profile_expenses():
+    # Check if user is logged in
+    if "user_id" not in session:
+        flash("Please log in to access this page", "warning")
+        return redirect(url_for("login"))
+
+
+@app.route("/profile/export")
+def export_expenses():
+    # Check if user is logged in
+    if "user_id" not in session:
+        flash("Please log in to access this page", "warning")
+        return redirect(url_for("login"))
+
+    conn = get_db()
+    expenses = conn.execute(
+        "SELECT category, amount, date, description FROM expenses WHERE user_id = ? ORDER BY date DESC",
+        (session["user_id"],)
+    ).fetchall()
+    conn.close()
+
+    # Generate CSV
+    import csv
+    from io import StringIO
+    
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Category", "Amount", "Date", "Description"])
+    for e in expenses:
+        writer.writerow([e["category"], e["amount"], e["date"], e["description"]])
+    
+    csv_data = output.getvalue()
+    output.close()
+    
+    return csv_data, 200, {
+        "Content-Type": "text/csv",
+        "Content-Disposition": "attachment; filename=expenses.csv"
+    }
+
+    conn = get_db()
+    expenses = conn.execute(
+        "SELECT category, amount, date, description FROM expenses WHERE user_id = ? ORDER BY date DESC",
+        (session["user_id"],)
+    ).fetchall()
+    conn.close()
+
+    return render_template("profile.html", user={"name": "", "email": ""}, expenses=expenses)
 
 
 if __name__ == "__main__":

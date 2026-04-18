@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="profile-container">
+  <div class="profile-content">
+    <!-- Profile Sidebar -->
+    <aside class="profile-sidebar">
+      <div class="profile-avatar"></div>
+      <h2 class="profile-name">{{ user.name }}</h2>
+      <p class="profile-email">{{ user.email }}</p>
+
+      <div class="profile-stats">
+        <div class="stat-card">
+          <span class="stat-number">{{ expenses|length }}</span>
+          <span class="stat-label">Total Transactions</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-number">\${{ "%.2f"|format(total_spent) }}</span>
+          <span class="stat-label">Total Spent</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-number">\${{ "%.2f"|format(total_spent / expenses|length if expenses|length > 0 else 0) }}</span>
+          <span class="stat-label">Avg per Transaction</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Profile Content -->
+    <main class="profile-main">
+      <!-- Action Buttons -->
+      <div class="profile-actions">
+        <a href="{{ url_for('add_expense') }}" class="btn btn-primary">+ Add Expense</a>
+        <a href="{{ url_for('export_expenses') }}" class="btn btn-outline">Export</a>
+      </div>
+
+      <!-- Expense Section -->
+      <section class="expense-section">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Recent Expenses</h2>
+            <p class="section-subtitle">View and manage your spending history</p>
+          </div>
+        </div>
+
+        {% if expenses %}
+        <!-- Expense Table -->
+        <div class="expense-table-container">
+          <table class="expense-table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for expense in expenses|sort(attribute='date', reverse=true) %}
+              <tr>
+                <td class="category-{{ expense.category.lower() }}">{{ expense.category }}</td>
+                <td class="expense-amount {% if expense.amount > 0 %}income{% else %}expense{% endif %}">
+                  ${{ "%.2f"|format(expense.amount) }}
+                </td>
+                <td>{{ expense.date }}</td>
+                <td>{{ expense.description or "-" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <h3>No expenses recorded yet</h3>
+          <p>Start tracking your spending by adding your first expense</p>
+          <a href="{{ url_for('add_expense') }}" class="btn btn-primary">Add Your First Expense</a>
+        </div>
+        {% endif %}
+      </section>
+    </main>
+  </div>
+</div>
+{% endblock %}
