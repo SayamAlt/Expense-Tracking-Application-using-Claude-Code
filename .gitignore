@@ -6,3 +6,6 @@ __pycache__/
 .env
 .DS_Store
 .claude/plans/
+.vscode
+.bevel
+.pytest_cache
