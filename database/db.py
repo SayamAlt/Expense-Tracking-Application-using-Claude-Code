@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from collections import Counter
 from datetime import date
 from werkzeug.security import generate_password_hash
 
@@ -38,6 +39,38 @@ def init_db():
     """)
     conn.commit()
     conn.close()
+
+
+def get_expenses_for_user(conn, user_id, start_date=None, end_date=None):
+    query = "SELECT * FROM expenses WHERE user_id = ?"
+    params = [user_id]
+    if start_date:
+        query += " AND date >= ?"
+        params.append(start_date)
+    if end_date:
+        query += " AND date <= ?"
+        params.append(end_date)
+    query += " ORDER BY date DESC"
+    return conn.execute(query, params).fetchall()
+
+
+def summarise_expenses(expenses):
+    total_spent = sum(float(e["amount"]) for e in expenses)
+    average = total_spent / len(expenses) if expenses else 0
+    category_totals = Counter()
+    for e in expenses:
+        category_totals[e["category"]] += float(e["amount"])
+    top_category = category_totals.most_common(1)[0] if category_totals else ("None", 0)
+    total_for_percent = total_spent if total_spent > 0 else 1
+    category_breakdown = [
+        {
+            "name": cat,
+            "amount": amt,
+            "percentage": round((amt / total_for_percent) * 100, 1),
+        }
+        for cat, amt in category_totals.most_common()
+    ]
+    return total_spent, average, top_category, category_breakdown
 
 
 def seed_db():

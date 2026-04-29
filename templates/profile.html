@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile-filter.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="profile-container">
   <!-- Profile Sidebar -->
@@ -45,14 +49,50 @@
 
   <!-- Main area: two-column layout -->
   <main class="profile-main">
+    <!-- Date Filter -->
+    <div class="filter-bar">
+      <div class="filter-windows">
+        <button type="button" class="filter-window-btn" data-window="all">All Time</button>
+        <button type="button" class="filter-window-btn" data-window="month">This Month</button>
+        <button type="button" class="filter-window-btn" data-window="3months">Last 3 Months</button>
+        <button type="button" class="filter-window-btn" data-window="6months">Last 6 Months</button>
+      </div>
+      <form method="GET" action="{{ url_for('profile') }}" class="filter-form" id="date-filter-form">
+        <label for="start_date" class="filter-label">From</label>
+        <input type="date" id="start_date" name="start_date"
+               value="{{ start_date }}" class="filter-input">
+        <label for="end_date" class="filter-label">To</label>
+        <input type="date" id="end_date" name="end_date"
+               value="{{ end_date }}" class="filter-input">
+        <button type="submit" class="btn-primary filter-btn">Filter</button>
+        <a href="{{ url_for('profile') }}" class="btn-clear">Clear</a>
+      </form>
+      {% if start_date or end_date %}
+      <span class="filter-badge">
+        Showing: {{ start_date or '…' }} → {{ end_date or '…' }}
+      </span>
+      {% endif %}
+    </div>
+
     <div class="columns">
       <!-- Recent Expenses (left) -->
       <section class="column" id="recent-expenses">
         <div class="card expense-section">
           <div class="section-header">
-            <h2 class="section-title">Recent Expenses</h2>
+            <h2 class="section-title">
+              {% if filter_active %}
+                Filtered Expenses
+                <span class="section-count">({{ recent_expenses|length }})</span>
+              {% else %}
+                Recent Expenses
+                {% if expenses|length > 10 %}
+                  <span class="section-count">(10 of {{ expenses|length }})</span>
+                {% endif %}
+              {% endif %}
+            </h2>
           </div>
           <div class="table-container">
+            {% if recent_expenses %}
             <table class="transaction-table">
               <thead>
                 <tr>
@@ -73,6 +113,9 @@
                 {% endfor %}
               </tbody>
             </table>
+            {% else %}
+            <p class="no-expenses">No expenses found for the selected period.</p>
+            {% endif %}
           </div>
         </div>
       </section>
@@ -109,6 +152,50 @@
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     lucide.createIcons();
+
+    var form      = document.getElementById('date-filter-form');
+    var startInput = document.getElementById('start_date');
+    var endInput   = document.getElementById('end_date');
+
+    // toISOString() uses UTC and can shift the date for users in negative-offset
+    // timezones, so we build the string from local year/month/day instead.
+    function toISO(d) {
+      var y = d.getFullYear();
+      var m = String(d.getMonth() + 1).padStart(2, '0');
+      var day = String(d.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + day;
+    }
+
+    document.querySelectorAll('.filter-window-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var today = new Date();
+        var start, end;
+
+        switch (this.dataset.window) {
+          case 'all':
+            startInput.value = '';
+            endInput.value   = '';
+            form.submit();
+            return;
+          case 'month':
+            start = new Date(today.getFullYear(), today.getMonth(), 1);
+            end   = today;
+            break;
+          case '3months':
+            start = new Date(today.getFullYear(), today.getMonth() - 3, today.getDate());
+            end   = today;
+            break;
+          case '6months':
+            start = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate());
+            end   = today;
+            break;
+        }
+
+        startInput.value = toISO(start);
+        endInput.value   = toISO(end);
+        form.submit();
+      });
+    });
   });
 </script>
 {% endblock %}

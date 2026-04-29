@@ -1,0 +1,84 @@
+.filter-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-bottom: 1.25rem;
+}
+
+.filter-windows {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.filter-window-btn {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.3rem 0.85rem;
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    color: var(--ink-muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.filter-window-btn:hover {
+    background: var(--accent-light);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.filter-form {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.filter-label {
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+}
+
+.filter-input {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.35rem 0.6rem;
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--paper-card);
+}
+
+.filter-btn {
+    padding: 0.4rem 1rem;
+}
+
+.btn-clear {
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+    text-decoration: underline;
+}
+
+.filter-badge {
+    font-size: 0.8rem;
+    background: var(--accent-light);
+    color: var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 0.2rem 0.6rem;
+}
+
+.section-count {
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+    font-family: var(--font-body);
+    font-weight: 400;
+    margin-left: 0.3rem;
+}
+
+.no-expenses {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--ink-faint);
+    font-size: 0.9rem;
+}

@@ -1,8 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
-from database.db import get_db, init_db, seed_db
+from database.db import get_db, init_db, seed_db, get_expenses_for_user, summarise_expenses
 from werkzeug.security import generate_password_hash, check_password_hash
-from collections import Counter
+from datetime import date as _date
 import csv
+import os
 from io import StringIO
 
 app = Flask(__name__)
@@ -269,51 +270,50 @@ def profile():
         flash("Please log in to access this page", "warning")
         return redirect(url_for("login"))
 
+    start_date = request.args.get("start_date", "").strip() or None
+    end_date = request.args.get("end_date", "").strip() or None
+
+    try:
+        if start_date:
+            _date.fromisoformat(start_date)
+        if end_date:
+            _date.fromisoformat(end_date)
+        if start_date and end_date and start_date > end_date:
+            raise ValueError("start_date after end_date")
+    except ValueError:
+        flash("Invalid date filter — showing all expenses.", "error")
+        start_date = end_date = None
+
     conn = get_db()
     user = conn.execute(
         "SELECT name, email, created_at FROM users WHERE id = ?",
         (session["user_id"],)
     ).fetchone()
 
-    expenses = conn.execute(
-        "SELECT * FROM expenses WHERE user_id = ? ORDER BY date DESC",
-        (session["user_id"],)
-    ).fetchall()
+    expenses = get_expenses_for_user(conn, session["user_id"], start_date, end_date)
     conn.close()
 
-    total_spent = sum(float(e["amount"]) for e in expenses)
-    average = total_spent / len(expenses) if expenses else 0
+    total_spent, average, top_category, category_breakdown = summarise_expenses(expenses)
 
-    category_totals = Counter()
-    for e in expenses:
-        category_totals[e["category"]] += float(e["amount"])
-
-    top_category = category_totals.most_common(1)[0] if category_totals else ("None", 0)
-
-    # Prepare category breakdown for template
-    category_breakdown = []
-    total_for_percent = total_spent if total_spent > 0 else 1
-    for cat, amt in category_totals.most_common():
-        category_breakdown.append({
-            "name": cat,
-            "amount": amt,
-            "percentage": round((amt / total_for_percent) * 100, 1)
-        })
-
-    # Get recent expenses (first 10)
-    recent_expenses = expenses[:10] if expenses else []
+    # When a filter is active show all matching expenses;
+    # otherwise cap the table to the most recent 10.
+    filter_active = bool(start_date or end_date)
+    recent_expenses = expenses if filter_active else expenses[:10]
 
     return render_template(
         "profile.html",
         user=user,
         expenses=expenses,
         recent_expenses=recent_expenses,
+        filter_active=filter_active,
         total_spent=total_spent,
         total_spent_formatted=f"{total_spent:.2f}",
         average=round(average, 2),
         top_category_name=top_category[0],
         top_category_amount=top_category[1],
-        category_breakdown=category_breakdown
+        category_breakdown=category_breakdown,
+        start_date=start_date or "",
+        end_date=end_date or "",
     )
     
 @app.route("/profile/export")
@@ -344,4 +344,5 @@ def export_expenses():
     }
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    app.run(debug=debug, port=5001)
