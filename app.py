@@ -263,6 +263,14 @@ def delete_expense(expense_id):
     conn.close()
     return render_template("delete_expense.html", expense=expense)
 
+# Analytics route
+@app.route("/analytics")
+def analytics():
+    if "user_id" not in session:
+        flash("Please log in to access this page", "warning")
+        return redirect(url_for("login"))
+    return render_template("analytics.html")
+
 # Profile Routes
 @app.route("/profile")
 def profile():
