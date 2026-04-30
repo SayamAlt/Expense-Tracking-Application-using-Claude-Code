@@ -1,0 +1,59 @@
+{
+  "enabledPlugins": {
+    "agents-observe@agents-observe": true
+  },
+  "extraKnownMarketplaces": {
+    "agents-observe": {
+      "source": {
+        "source": "github",
+        "repo": "simple10/agents-observe"
+      }
+    }
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /Users/sayamkumar/.claude/plugins/marketplaces/agents-observe/hooks/scripts/observe_cli.mjs"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /Users/sayamkumar/.claude/plugins/marketplaces/agents-observe/hooks/scripts/observe_cli.mjs"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /Users/sayamkumar/.claude/plugins/marketplaces/agents-observe/hooks/scripts/observe_cli.mjs"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /Users/sayamkumar/.claude/plugins/marketplaces/agents-observe/hooks/scripts/observe_cli.mjs"
+          }
+        ]
+      }
+    ]
+  }
+}

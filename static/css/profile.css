@@ -8,6 +8,7 @@
   --color-primary-light: #EDE9FE;
   --color-accent: #10B981;
   --color-danger: #EF4444;
+  --color-danger-light: #FEE2E2;
   --color-warning: #F59E0B;
   --space-1: 4px;
   --space-2: 8px;
@@ -342,6 +343,61 @@ body {
   font-weight: 600;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   white-space: nowrap;
+}
+
+/* Section header & title */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.btn-sm {
+  font-size: 0.82rem;
+  padding: 0.4rem 1rem;
+}
+
+/* Expense row action links */
+.actions-col {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.action-link {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.action-edit {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  margin-right: 4px;
+}
+
+.action-edit:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.action-delete {
+  color: var(--color-danger);
+  background: var(--color-danger-light);
+}
+
+.action-delete:hover {
+  background: var(--color-danger);
+  color: #fff;
 }
 
 /* Enhanced card styling for Recent Expenses and By Category sections */

@@ -9,6 +9,9 @@ from io import StringIO
 app = Flask(__name__)
 app.secret_key = 'dev-secret-key-change-in-production'
 
+EXPENSE_CATEGORIES = ["Food", "Transport", "Bills", "Health",
+                      "Entertainment", "Shopping", "Other"]
+
 # Custom filter for currency formatting
 @app.template_filter('currency')
 def currency_filter(value):
@@ -144,27 +147,40 @@ def add_expense():
         return redirect(url_for("login"))
 
     if request.method == "POST":
-        amount = request.form.get("amount", "").strip()
-        category = request.form.get("category", "").strip()
+        amount_raw = request.form.get("amount", "").strip()
+        category = request.form.get("category", "")
         date = request.form.get("date", "").strip()
         description = request.form.get("description", "").strip()
 
         errors = []
+        amount = None
         try:
-            amount = float(amount)
+            amount = float(amount_raw)
             if amount <= 0:
                 errors.append("Amount must be positive")
+            elif amount > 1_000_000:
+                errors.append("Amount cannot exceed $1,000,000")
         except (ValueError, TypeError):
             errors.append("Amount must be a valid number")
 
-        if not category:
-            errors.append("Category is required")
+        if not category or category not in EXPENSE_CATEGORIES:
+            errors.append("Please select a valid category")
         if not date:
             errors.append("Date is required")
+        else:
+            try:
+                _date.fromisoformat(date)
+            except ValueError:
+                errors.append("Date must be a valid date (YYYY-MM-DD)")
 
         if errors:
-            flash("; ".join(errors), "error")
-            return redirect(url_for("profile"))
+            return render_template(
+                "add_expense.html",
+                errors=errors,
+                categories=EXPENSE_CATEGORIES,
+                form={"amount": amount_raw, "category": category,
+                      "date": date, "description": description},
+            )
 
         conn = get_db()
         conn.execute(
@@ -177,7 +193,13 @@ def add_expense():
         flash("Expense added successfully!", "success")
         return redirect(url_for("profile"))
 
-    return redirect(url_for("profile"))
+    return render_template(
+        "add_expense.html",
+        errors=[],
+        categories=EXPENSE_CATEGORIES,
+        form={"amount": "", "category": "", "date": _date.today().isoformat(),
+              "description": ""},
+    )
 
 @app.route("/expenses/<int:expense_id>/edit", methods=["GET", "POST"])
 def edit_expense(expense_id):
@@ -197,27 +219,42 @@ def edit_expense(expense_id):
         return redirect(url_for("profile"))
 
     if request.method == "POST":
-        amount = request.form.get("amount", "").strip()
-        category = request.form.get("category", "").strip()
+        amount_raw = request.form.get("amount", "").strip()
+        category = request.form.get("category", "")
         date = request.form.get("date", "").strip()
         description = request.form.get("description", "").strip()
 
         errors = []
+        amount = None
         try:
-            amount = float(amount)
+            amount = float(amount_raw)
             if amount <= 0:
                 errors.append("Amount must be positive")
+            elif amount > 1_000_000:
+                errors.append("Amount cannot exceed $1,000,000")
         except (ValueError, TypeError):
             errors.append("Amount must be a valid number")
 
-        if not category:
-            errors.append("Category is required")
+        if not category or category not in EXPENSE_CATEGORIES:
+            errors.append("Please select a valid category")
         if not date:
             errors.append("Date is required")
+        else:
+            try:
+                _date.fromisoformat(date)
+            except ValueError:
+                errors.append("Date must be a valid date (YYYY-MM-DD)")
 
         if errors:
-            flash("; ".join(errors), "error")
-            return redirect(url_for("profile"))
+            conn.close()
+            return render_template(
+                "edit_expense.html",
+                expense=expense,
+                errors=errors,
+                categories=EXPENSE_CATEGORIES,
+                form={"amount": amount_raw, "category": category,
+                      "date": date, "description": description},
+            )
 
         conn.execute(
             "UPDATE expenses SET amount = ?, category = ?, date = ?, description = ? WHERE id = ? AND user_id = ?",
@@ -230,7 +267,14 @@ def edit_expense(expense_id):
         return redirect(url_for("profile"))
 
     conn.close()
-    return render_template("edit_expense.html", expense=expense)
+    return render_template(
+        "edit_expense.html",
+        expense=expense,
+        errors=[],
+        categories=EXPENSE_CATEGORIES,
+        form={"amount": expense["amount"], "category": expense["category"],
+              "date": expense["date"], "description": expense["description"] or ""},
+    )
 
 @app.route("/expenses/<int:expense_id>/delete", methods=["GET", "POST"])
 def delete_expense(expense_id):
@@ -262,6 +306,14 @@ def delete_expense(expense_id):
 
     conn.close()
     return render_template("delete_expense.html", expense=expense)
+
+# Analytics route
+@app.route("/analytics")
+def analytics():
+    if "user_id" not in session:
+        flash("Please log in to access this page", "warning")
+        return redirect(url_for("login"))
+    return render_template("analytics.html")
 
 # Profile Routes
 @app.route("/profile")
