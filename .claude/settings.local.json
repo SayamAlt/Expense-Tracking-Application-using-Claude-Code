@@ -8,5 +8,9 @@
       "Bash(python -c ':*)",
       "Bash(sqlite3:*)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "MCP_DOCKER"
+  ],
+  "enableAllProjectMcpServers": true
 }
