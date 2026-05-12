@@ -31,6 +31,14 @@
             "command": "node /Users/sayamkumar/.claude/plugins/marketplaces/agents-observe/hooks/scripts/observe_cli.mjs"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import sys, json; data = json.load(sys.stdin); cmd = data.get('tool_input', {}).get('command', ''); protected = ['spendly.db', '.env', 'migrations/']; dangerous = ['rm', 'rm -', 'unlink', 'truncate']; [[(print(f'BLOCKED: Cannot run destructive command on protected file: {p}', file=sys.stderr), sys.exit(2)) for p in protected if p in cmd] for d in dangerous if d in cmd]\""          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -41,6 +49,14 @@
             "type": "command",
             "command": "node /Users/sayamkumar/.claude/plugins/marketplaces/agents-observe/hooks/scripts/observe_cli.mjs"
           }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import sys, json, subprocess; data=json.load(sys.stdin); path=data.get('tool_input', {}).get('file_path', ''); subprocess.run(['python3', '-m', 'black', '--quiet', path]) if path.endswith('.py') else None\""          }
         ]
       }
     ],
