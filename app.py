@@ -1,5 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
-from database.db import get_db, init_db, seed_db, get_expenses_for_user, summarise_expenses
+from database.db import (
+    get_db,
+    init_db,
+    seed_db,
+    get_expenses_for_user,
+    summarise_expenses,
+)
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date as _date
 import csv
@@ -7,13 +13,21 @@ import os
 from io import StringIO
 
 app = Flask(__name__)
-app.secret_key = 'dev-secret-key-change-in-production'
+app.secret_key = "dev-secret-key-change-in-production"
 
-EXPENSE_CATEGORIES = ["Food", "Transport", "Bills", "Health",
-                      "Entertainment", "Shopping", "Other"]
+EXPENSE_CATEGORIES = [
+    "Food",
+    "Transport",
+    "Bills",
+    "Health",
+    "Entertainment",
+    "Shopping",
+    "Other",
+]
+
 
 # Custom filter for currency formatting
-@app.template_filter('currency')
+@app.template_filter("currency")
 def currency_filter(value):
     try:
         amount = float(value)
@@ -21,9 +35,11 @@ def currency_filter(value):
     except (ValueError, TypeError):
         return "0.00"
 
+
 with app.app_context():
     init_db()
     seed_db()
+
 
 # Routes
 @app.route("/")
@@ -31,6 +47,7 @@ def landing():
     if "user_id" in session:
         return redirect(url_for("profile"))
     return render_template("landing.html")
+
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -49,7 +66,9 @@ def register():
             errors.append("Name is required")
         if not email:
             errors.append("Email is required")
-        elif "@" not in email or "." not in email.split("@")[1] if "@" in email else True:
+        elif (
+            "@" not in email or "." not in email.split("@")[1] if "@" in email else True
+        ):
             errors.append("Invalid email format")
         if not password:
             errors.append("Password is required")
@@ -77,24 +96,29 @@ def register():
         try:
             conn.execute(
                 "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
-                (name, email, password_hash)
+                (name, email, password_hash),
             )
             conn.commit()
             conn.close()
             return redirect(url_for("login"))
         except Exception as e:
             conn.close()
-            return render_template("register.html", error="Registration failed. Please try again.")
+            return render_template(
+                "register.html", error="Registration failed. Please try again."
+            )
 
     return render_template("register.html")
+
 
 @app.route("/terms")
 def terms():
     return render_template("terms.html")
 
+
 @app.route("/privacy")
 def privacy():
     return render_template("privacy.html")
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -129,6 +153,7 @@ def login():
 
     return render_template("login.html")
 
+
 @app.route("/logout")
 def logout():
     if "user_id" not in session:
@@ -138,6 +163,7 @@ def logout():
     session.clear()
     flash("Logged out successfully!", "info")
     return redirect(url_for("landing"))
+
 
 # Expense routes
 @app.route("/expenses/add", methods=["GET", "POST"])
@@ -178,14 +204,18 @@ def add_expense():
                 "add_expense.html",
                 errors=errors,
                 categories=EXPENSE_CATEGORIES,
-                form={"amount": amount_raw, "category": category,
-                      "date": date, "description": description},
+                form={
+                    "amount": amount_raw,
+                    "category": category,
+                    "date": date,
+                    "description": description,
+                },
             )
 
         conn = get_db()
         conn.execute(
             "INSERT INTO expenses (user_id, amount, category, date, description) VALUES (?, ?, ?, ?, ?)",
-            (session["user_id"], amount, category, date, description)
+            (session["user_id"], amount, category, date, description),
         )
         conn.commit()
         conn.close()
@@ -197,9 +227,14 @@ def add_expense():
         "add_expense.html",
         errors=[],
         categories=EXPENSE_CATEGORIES,
-        form={"amount": "", "category": "", "date": _date.today().isoformat(),
-              "description": ""},
+        form={
+            "amount": "",
+            "category": "",
+            "date": _date.today().isoformat(),
+            "description": "",
+        },
     )
+
 
 @app.route("/expenses/<int:expense_id>/edit", methods=["GET", "POST"])
 def edit_expense(expense_id):
@@ -210,7 +245,7 @@ def edit_expense(expense_id):
     conn = get_db()
     expense = conn.execute(
         "SELECT * FROM expenses WHERE id = ? AND user_id = ?",
-        (expense_id, session["user_id"])
+        (expense_id, session["user_id"]),
     ).fetchone()
 
     if not expense:
@@ -252,13 +287,17 @@ def edit_expense(expense_id):
                 expense=expense,
                 errors=errors,
                 categories=EXPENSE_CATEGORIES,
-                form={"amount": amount_raw, "category": category,
-                      "date": date, "description": description},
+                form={
+                    "amount": amount_raw,
+                    "category": category,
+                    "date": date,
+                    "description": description,
+                },
             )
 
         conn.execute(
             "UPDATE expenses SET amount = ?, category = ?, date = ?, description = ? WHERE id = ? AND user_id = ?",
-            (amount, category, date, description, expense_id, session["user_id"])
+            (amount, category, date, description, expense_id, session["user_id"]),
         )
         conn.commit()
         conn.close()
@@ -272,9 +311,14 @@ def edit_expense(expense_id):
         expense=expense,
         errors=[],
         categories=EXPENSE_CATEGORIES,
-        form={"amount": expense["amount"], "category": expense["category"],
-              "date": expense["date"], "description": expense["description"] or ""},
+        form={
+            "amount": expense["amount"],
+            "category": expense["category"],
+            "date": expense["date"],
+            "description": expense["description"] or "",
+        },
     )
+
 
 @app.route("/expenses/<int:expense_id>/delete", methods=["GET", "POST"])
 def delete_expense(expense_id):
@@ -285,7 +329,7 @@ def delete_expense(expense_id):
     conn = get_db()
     expense = conn.execute(
         "SELECT * FROM expenses WHERE id = ? AND user_id = ?",
-        (expense_id, session["user_id"])
+        (expense_id, session["user_id"]),
     ).fetchone()
 
     if not expense:
@@ -296,7 +340,7 @@ def delete_expense(expense_id):
     if request.method == "POST":
         conn.execute(
             "DELETE FROM expenses WHERE id = ? AND user_id = ?",
-            (expense_id, session["user_id"])
+            (expense_id, session["user_id"]),
         )
         conn.commit()
         conn.close()
@@ -307,6 +351,7 @@ def delete_expense(expense_id):
     conn.close()
     return render_template("delete_expense.html", expense=expense)
 
+
 # Analytics route
 @app.route("/analytics")
 def analytics():
@@ -314,6 +359,7 @@ def analytics():
         flash("Please log in to access this page", "warning")
         return redirect(url_for("login"))
     return render_template("analytics.html")
+
 
 # Profile Routes
 @app.route("/profile")
@@ -338,14 +384,15 @@ def profile():
 
     conn = get_db()
     user = conn.execute(
-        "SELECT name, email, created_at FROM users WHERE id = ?",
-        (session["user_id"],)
+        "SELECT name, email, created_at FROM users WHERE id = ?", (session["user_id"],)
     ).fetchone()
 
     expenses = get_expenses_for_user(conn, session["user_id"], start_date, end_date)
     conn.close()
 
-    total_spent, average, top_category, category_breakdown = summarise_expenses(expenses)
+    total_spent, average, top_category, category_breakdown = summarise_expenses(
+        expenses
+    )
 
     # When a filter is active show all matching expenses;
     # otherwise cap the table to the most recent 10.
@@ -367,7 +414,8 @@ def profile():
         start_date=start_date or "",
         end_date=end_date or "",
     )
-    
+
+
 @app.route("/profile/export")
 def export_expenses():
     if "user_id" not in session:
@@ -377,7 +425,7 @@ def export_expenses():
     conn = get_db()
     expenses = conn.execute(
         "SELECT category, amount, date, description FROM expenses WHERE user_id = ? ORDER BY date DESC",
-        (session["user_id"],)
+        (session["user_id"],),
     ).fetchall()
     conn.close()
 
@@ -390,11 +438,17 @@ def export_expenses():
     csv_data = output.getvalue()
     output.close()
 
-    return csv_data, 200, {
-        "Content-Type": "text/csv",
-        "Content-Disposition": "attachment; filename=expenses.csv"
-    }
+    return (
+        csv_data,
+        200,
+        {
+            "Content-Type": "text/csv",
+            "Content-Disposition": "attachment; filename=expenses.csv",
+        },
+    )
+
 
 if __name__ == "__main__":
     debug = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
-    app.run(debug=debug, port=5001)
+    port = int(os.environ.get("PORT", 5001))
+    app.run(debug=debug, port=port, host="0.0.0.0")
